@@ -16,7 +16,7 @@ jobs:
   deploy:
     runs-on: ubuntu-24.04
     env:
-      NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || 'https://herveranik.com' }}
+      NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || 'https://herve.dev' }}
       NEXT_PUBLIC_GTAG_ID: ${{ vars.NEXT_PUBLIC_GTAG_ID || 'G-Z4420RG7TZ' }}
     steps:
       - name: Checkout code

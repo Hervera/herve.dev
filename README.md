@@ -25,13 +25,13 @@ Existing routes are preserved: `/`, `/projects`, `/about`, `/resume`, `/contact`
 Copy `.env.example` to `.env.local` to change configuration:
 
 ```dotenv
-NEXT_PUBLIC_SITE_URL=https://herveranik.com
+NEXT_PUBLIC_SITE_URL=https://herve.dev
 NEXT_PUBLIC_GTAG_ID=G-Z4420RG7TZ
 ```
 
 `NEXT_PUBLIC_SITE_URL` must be the public HTTP(S) origin, without a subpath, query, or fragment. Set the correct domain **before building** and rebuild after changes. Set `NEXT_PUBLIC_GTAG_ID=` to disable analytics. The existing property tracks the first page and client-side navigation. If Google Analytics enhanced measurement also tracks browser history changes, disable that automatic page-change setting for this property to avoid counting the same navigation twice.
 
-After deploying, submit `https://herveranik.com/sitemap.xml` in Google Search Console and Bing Webmaster Tools. These technical SEO features support discovery and indexing; search engines decide when to index pages and where to rank them.
+After deploying, submit `https://herve.dev/sitemap.xml` in Google Search Console and Bing Webmaster Tools. These technical SEO features support discovery and indexing; search engines decide when to index pages and where to rank them.
 
 ## Build and verify
 
