@@ -1,0 +1,293 @@
+/* --------------------------------------------------
+   Design tokens + theme system
+-------------------------------------------------- */
+
+:root {
+    --radius: 18px;
+    --shadow: 0 10px 30px rgba(0,0,0,.15);
+    --max: 1080px;
+    --pad: 22px;
+}
+
+/* Dark theme (default) */
+:root,
+:root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0b0c10;
+    --panel: #11131a;
+    --text: #e9eef5;
+    --muted: #aab4c3;
+    --line: #23283a;
+    --accent: #7c5cff;
+    --accent2: #2ee59d;
+}
+
+/* Light theme */
+:root[data-theme="light"] {
+    color-scheme: light;
+    --bg: #f7f8fb;
+    --panel: #ffffff;
+    --text: #0d1220;
+    --muted: #4b5565;
+    --line: #e4e7ee;
+    --accent: #5b4bff;
+    --accent2: #00a86b;
+}
+
+/* --------------------------------------------------
+    Base reset
+-------------------------------------------------- */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto,
+    Helvetica Neue, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+body {
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+button, select {
+    font: inherit;
+}
+
+select option {
+    color: var(--text);
+    background: var(--panel);
+}
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+}
+
+.skip-link {
+    position: fixed;
+    top: 8px;
+    left: 8px;
+    z-index: 100;
+    padding: 10px 14px;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    transform: translateY(-150%);
+}
+
+.skip-link:focus {
+    transform: translateY(0);
+}
+
+.empty-state {
+    margin-top: 20px;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+/* --------------------------------------------------
+    Layout helpers
+-------------------------------------------------- */
+
+.container {
+    max-width: var(--max);
+    margin-inline: auto;
+    padding: 26px var(--pad);
+}
+
+.panel {
+    background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.035),
+    rgba(255,255,255,0.015)
+    );
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.card {
+    padding: 20px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 16px;
+}
+
+/* --------------------------------------------------
+    Typography
+-------------------------------------------------- */
+
+h1 {
+    font-size: clamp(28px, 4vw, 42px);
+    line-height: 1.15;
+    margin: 0 0 12px;
+}
+
+h2 {
+    font-size: clamp(22px, 3vw, 30px);
+    margin: 0 0 10px;
+}
+
+h3 {
+    font-size: 18px;
+    margin: 0 0 6px;
+}
+
+p {
+    margin: 0 0 14px;
+    color: var(--muted);
+    line-height: 1.65;
+}
+
+/* --------------------------------------------------
+    UI elements
+-------------------------------------------------- */
+
+.hr {
+    height: 1px;
+    background: var(--line);
+    margin: 20px 0;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: rgba(255,255,255,0.03);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 14px;
+    transition: border-color .15s ease, background .15s ease, transform .05s ease;
+}
+
+.btn:hover {
+    background: rgba(255,255,255,0.06);
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.btn.primary {
+    border-color: rgba(124,92,255,.5);
+    background: linear-gradient(
+    180deg,
+    rgba(124,92,255,.28),
+    rgba(124,92,255,.14)
+    );
+}
+
+.nowrap {
+    white-space: nowrap;
+}
+
+/* Small pill / badge */
+.kbd {
+    font-size: 12px;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 6px 10px;
+    background: rgba(255,255,255,0.03);
+}
+
+/* --------------------------------------------------
+    Responsive tweaks
+-------------------------------------------------- */
+
+@media (max-width: 860px) {
+    .grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    }
+}
+  
+
+/* Shared React component layouts, migrated from Vue scoped styles. */
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+main.container { width: 100%; flex: 1; scroll-margin-top: 100px; }
+footer.container { width: 100%; }
+.grid > *, .top > *, .card-top > *, .contact-grid > * { min-width: 0; }
+.nav { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); background: rgba(11,12,16,.65); }
+:root[data-theme="light"] .nav { background: rgba(255,255,255,.75); }
+.nav-inner { display: flex; align-items: center; justify-content: space-between; padding-block: 14px; flex-wrap: wrap; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 700; }
+.dot { width: 10px; height: 10px; border-radius: 999px; background: linear-gradient(180deg,var(--accent),var(--accent2)); }
+.links { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.links a { font-size: 14px; color: var(--muted); transition: color .15s ease; }
+:root[data-theme="light"] .links a { color: #374151; }
+.links a.active, .links a[aria-current="page"] { color: var(--text); }
+.theme-toggle { padding-inline: 12px; }
+.hide-mobile { display: inline-flex; }
+.theme-label { display: inline; }
+.hero { grid-column: span 5; }
+.side { grid-column: span 7; }
+.lead { font-size: 16px; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.cta { margin-top: 14px; }
+.stats { display: flex; gap: 14px; flex-wrap: wrap; }
+.stat { border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; background: rgba(255,255,255,.02); }
+.num { font-weight: 800; }
+.stat-label { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.featured-list { display: grid; gap: 12px; margin-top: 12px; }
+.top { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+.card-top { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
+.cards { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.filters { display: flex; gap: 12px; flex-wrap: wrap; }
+.filter { display: flex; align-items: center; gap: 10px; }
+select { background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 12px; color: var(--text); padding: 10px 12px; }
+.tags, .prose .tags { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0 0; padding: 0; list-style: none; }
+.tag, .prose .tag { font-size: 12px; color: var(--text); border: 1px solid var(--line); background: rgba(255,255,255,.03); padding: 6px 10px; border-radius: 999px; margin: 0; }
+.prose ul { padding-left: 18px; color: var(--muted); margin: 10px 0 14px; }
+.prose li { margin: 8px 0; }
+.prose h3 { margin-top: 18px; }
+.muted { color: var(--muted); }
+.contact-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; }
+.inner { box-shadow: none; }
+.resume-frame { width: 100%; height: 75vh; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.02); }
+.foot { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 18px 0; flex-wrap: wrap; }
+.footer-right { display: flex; justify-content: flex-end; align-items: center; gap: 12px; color: var(--muted); }
+.theme-footer { display: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+@media (max-width: 860px) {
+  .hide-mobile, .theme-label { display: none; }
+  .hero, .side { grid-column: span 12; }
+  .cards, .contact-grid { grid-template-columns: 1fr; }
+  .foot { gap: 12px; }
+  .footer-right { justify-content: flex-start; flex-wrap: wrap; }
+  .theme-footer { display: inline-flex; }
+}
+@media (max-width: 420px) {
+  :root { --pad: 14px; }
+  .card { padding: 16px; }
+  .links { gap: 12px; }
+  .btn { max-width: 100%; overflow-wrap: anywhere; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+}
