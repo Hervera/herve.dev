@@ -62,11 +62,55 @@ This writes deployable HTML, assets, and Next.js navigation files to **`out/`**.
 
 Run `npm run generate` and upload the **entire contents of `out/`** to your web root. Include `_next/`, `.txt` files, and route segment directories: Next.js uses them for client navigation. Configure Nginx using [`deploy/nginx-static.conf`](deploy/nginx-static.conf). It serves each route's HTML and returns the exported 404 page with HTTP 404 for missing URLs.
 
-The included [GitHub Actions workflow](.github/workflows/deploy.yml) performs a manual static deployment with type and SEO checks first. If `InNext` is its own repository, the workflow is already in the correct location. If you track all of `Portfolio` in one repository, copy the workflow to that repository's root `.github/workflows/`; it detects the `InNext` subdirectory automatically. GitHub does not run workflows nested inside a project folder.
+The [GitHub Actions workflow](.github/workflows/deploy.yml) automatically deploys pushes to `main`. Pull requests run the same build, type, SEO, and release-safety checks without deploying. You can also run the workflow manually on `main` from the Actions tab. Deployments are serialized so two runs cannot switch the active release simultaneously.
 
-Configure repository secrets `VPS_HOST`, `VPS_USER`, `VPS_SSH_KEY`, `VPS_PATH`, and `VPS_KNOWN_HOSTS` (the server's verified SSH known-hosts entry). Optional repository variables `NEXT_PUBLIC_SITE_URL` and `NEXT_PUBLIC_GTAG_ID` override the workflow's preserved production defaults. To disable analytics in this workflow, set its `NEXT_PUBLIC_GTAG_ID` environment value to an empty string. Start it from the Actions tab when ready. This migration does not run that workflow or change the existing live deployment.
+The repository is [Hervera/herve.dev](https://github.com/Hervera/herve.dev). The workflow belongs at the repository root's `.github/workflows/`; it also detects an `InNext` subdirectory when the parent folder is the repository root.
 
-The deploy uploads files without deleting existing server files. When replacing an older build, use a clean release directory and point the web root at that release so removed routes do not remain available.
+GitHub Actions uses these encrypted repository secrets:
+
+| Secret | Configuration |
+| --- | --- |
+| `VPS_HOST` | `15.235.126.147` — the origin IP, used directly for SSH |
+| `VPS_USER` | `herve-deploy` — a dedicated user that owns this site's files |
+| `VPS_PATH` | `/var/www/herve.dev` |
+| `VPS_PORT` | `22` (optional; defaults to 22) |
+| `VPS_SSH_KEY` | The dedicated deployment private key |
+| `VPS_KNOWN_HOSTS` | The VPS's previously verified SSH host-key entries |
+
+The public repository variable `NEXT_PUBLIC_SITE_URL` is `https://herve.dev`. Optional `NEXT_PUBLIC_GTAG_ID` overrides the preserved analytics property. To disable analytics in this workflow, set its `NEXT_PUBLIC_GTAG_ID` environment value to an empty string.
+
+Each deployment uploads a fresh release to `/var/www/herve.dev/releases/<commit>-<run>-<attempt>`, checks the required files and commit marker, then atomically switches `/var/www/herve.dev/current`. An incomplete upload leaves the current site intact. Previous releases are retained for rollback, and removed pages do not remain in the active release. The workflow then checks all 14 live pages, assets, HTTP 404s, and the deployed commit through Cloudflare. The VPS needs Nginx, Bash, Python 3, tar, and SSH; it does not run a Node server for this static deployment.
+
+Run `npm run test:deployment` to check release switching, retention, and failure protection locally. To verify the public site directly:
+
+```sh
+SEO_ORIGIN=https://herve.dev npm run test:seo
+```
+
+### Cloudflare and HTTPS
+
+Create an A record for `@` pointing to `15.235.126.147` in the `herve.dev` zone. Cloudflare proxying can stay enabled for the website. GitHub Actions connects directly to the origin IP on port 22, so it does not need a Cloudflare API token.
+
+The VPS serves this domain from `/var/www/herve.dev/current`. [`deploy/prepare-vps.sh`](deploy/prepare-vps.sh) prepares its dedicated user, release directory, HTTP challenge location, and Certbot. It accepts the deployment **public** key and runs as root once; the workflow's private key belongs only in Actions secrets. It does not replace the other domains' Nginx files.
+
+After the DNS record resolves, request the origin certificate on the VPS:
+
+```sh
+certbot certonly --webroot -w /var/www/letsencrypt -d herve.dev \
+  --email herveranik@gmail.com --agree-tos --non-interactive
+```
+
+Install `deploy/nginx-static.conf` as `/etc/nginx/snippets/herve.dev-static.conf` and `deploy/nginx-herve.dev.conf` as `/etc/nginx/sites-available/herve.dev`, then run `nginx -t` and reload Nginx. The configuration redirects HTTP to HTTPS, serves the Let's Encrypt challenge path, and caches versioned JavaScript/CSS while revalidating HTML and navigation payloads. Certificate renewal must reload Nginx using a Certbot deploy hook.
+
+Set Cloudflare SSL/TLS encryption to **Full (strict)** after the valid origin certificate is installed; this validates HTTPS between Cloudflare and the VPS. See [Cloudflare's Full (strict) requirements](https://developers.cloudflare.com/ssl/origin-configuration/ssl-modes/full-strict/). Keep the default cache behavior for HTML and `.txt` navigation files, or bypass those paths in any custom Cache Everything rule.
+
+For a rollback on the VPS, choose an existing release ID from `/var/www/herve.dev/releases/` and switch the symlink:
+
+```sh
+cd /var/www/herve.dev
+ln -s /var/www/herve.dev/releases/<release-id> .rollback
+mv -Tf .rollback current
+```
 
 ### Node server or managed Next.js hosting
 

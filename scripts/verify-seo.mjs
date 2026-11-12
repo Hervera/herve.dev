@@ -9,11 +9,13 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const staticMode = process.argv.includes('--static');
+const externalOrigin = process.env.SEO_ORIGIN ? new URL(process.env.SEO_ORIGIN).origin : undefined;
+assert.ok(!staticMode || !externalOrigin, 'Use either --static or SEO_ORIGIN, not both');
 const mainRoutes = ['/', '/about', '/contact', '/projects', '/resume'];
 const slugs = ['pindo-sms-platform', 'tuzaride-web-app', 'quick-credit-backend', 'tuzaride-mobile-app', 'quick-credit-frontend', 'abahuza-real-estate', 'hope-of-family-cms', 'ecommerce-frontend', 'ecommerce-backend'];
 const expectedRoutes = [...mainRoutes, ...slugs.map(slug => `/projects/${slug}`)].sort();
 let child;
-let origin;
+let origin = externalOrigin;
 let serverLog = '';
 
 const decode = value => value.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;|&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
@@ -40,7 +42,7 @@ async function* assets(directory, prefix = '') {
 }
 
 try {
-  if (!staticMode) {
+  if (!staticMode && !externalOrigin) {
     await access(join(root, '.next/BUILD_ID'));
     const socket = createServer();
     socket.listen(0, '127.0.0.1');
@@ -67,6 +69,7 @@ try {
   const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(match => new URL(decode(match[1])));
   assert.deepEqual(urls.map(url => url.pathname).sort(), expectedRoutes, 'Sitemap must include every original route exactly once');
   const siteOrigin = urls[0].origin;
+  if (externalOrigin) assert.equal(siteOrigin, externalOrigin, 'Live sitemap must use the deployed public origin');
   const robots = await read('/robots.txt');
   assert.ok(robots.includes(`Sitemap: ${siteOrigin}/sitemap.xml`));
   assert.match(robots, /User-Agent: \*/i);
@@ -163,7 +166,12 @@ try {
       assert.deepEqual(canonical(html), [], `${path}: no misleading canonical`);
     }
   }
-  console.log(`Verified all ${urls.length} ${staticMode ? 'exported' : 'production'} pages: unique SEO metadata, canonical/social URLs, JSON-LD, rendered content, crawlable links, sitemap, robots, resume, and ${assetCount} public assets${staticMode ? ', plus exported 404' : ', plus real HTTP 404 responses'}.`);
+  if (externalOrigin && process.env.DEPLOYMENT_SHA) {
+    const response = await fetch(`${origin}/deployment-version.txt?revision=${encodeURIComponent(process.env.DEPLOYMENT_SHA)}`, { cache: 'no-store', signal: AbortSignal.timeout(15000) });
+    assert.equal(response.status, 200, 'Live deployment version must be available');
+    assert.equal((await response.text()).trim(), process.env.DEPLOYMENT_SHA, 'Cloudflare must serve the newly deployed commit');
+  }
+  console.log(`Verified all ${urls.length} ${staticMode ? 'exported' : externalOrigin ? 'live' : 'production'} pages: unique SEO metadata, canonical/social URLs, JSON-LD, rendered content, crawlable links, sitemap, robots, resume, and ${assetCount} public assets${staticMode ? ', plus exported 404' : ', plus real HTTP 404 responses'}.`);
 } finally {
   if (child && child.exitCode === null) {
     child.kill('SIGTERM');

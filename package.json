@@ -12,7 +12,8 @@
     "preview": "next start",
     "typecheck": "next typegen && tsc --noEmit",
     "test:seo": "node scripts/verify-seo.mjs",
-    "test:seo:static": "node scripts/verify-seo.mjs --static"
+    "test:seo:static": "node scripts/verify-seo.mjs --static",
+    "test:deployment": "node scripts/test-deployment.mjs"
   },
   "dependencies": {
     "next": "16.4.6",
