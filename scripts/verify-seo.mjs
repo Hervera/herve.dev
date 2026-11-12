@@ -171,6 +171,16 @@ try {
     assert.equal(response.status, 200, 'Live deployment version must be available');
     assert.equal((await response.text()).trim(), process.env.DEPLOYMENT_SHA, 'Cloudflare must serve the newly deployed commit');
   }
+  if (externalOrigin && process.env.SEO_WWW_ORIGIN) {
+    const wwwOrigin = new URL(process.env.SEO_WWW_ORIGIN).origin;
+    for (const path of ['/', '/projects', '/projects/pindo-sms-platform?source=www-check&view=case-study']) {
+      const response = await fetch(`${wwwOrigin}${path}`, { redirect: 'manual', signal: AbortSignal.timeout(15000) });
+      assert.ok([301, 308].includes(response.status), `${wwwOrigin}${path}: permanent redirect`);
+      assert.equal(response.headers.get('location'), new URL(path, `${externalOrigin}/`).href, `${path}: redirect preserves the path and query`);
+      await response.body?.cancel();
+    }
+    console.log('Verified www HTTPS and permanent redirects to the canonical domain, including paths and query strings.');
+  }
   console.log(`Verified all ${urls.length} ${staticMode ? 'exported' : externalOrigin ? 'live' : 'production'} pages: unique SEO metadata, canonical/social URLs, JSON-LD, rendered content, crawlable links, sitemap, robots, resume, and ${assetCount} public assets${staticMode ? ', plus exported 404' : ', plus real HTTP 404 responses'}.`);
 } finally {
   if (child && child.exitCode === null) {

@@ -84,19 +84,20 @@ Each deployment uploads a fresh release to `/var/www/herve.dev/releases/<commit>
 Run `npm run test:deployment` to check release switching, retention, and failure protection locally. To verify the public site directly:
 
 ```sh
-SEO_ORIGIN=https://herve.dev npm run test:seo
+SEO_ORIGIN=https://herve.dev SEO_WWW_ORIGIN=https://www.herve.dev npm run test:seo
 ```
 
 ### Cloudflare and HTTPS
 
-Create an A record for `@` pointing to `15.235.126.147` in the `herve.dev` zone. Cloudflare proxying can stay enabled for the website. GitHub Actions connects directly to the origin IP on port 22, so it does not need a Cloudflare API token.
+Create proxied A records for `@` and `www` pointing to `15.235.126.147` in the `herve.dev` zone. A proxied `www` CNAME targeting `herve.dev` also works. Nginx permanently redirects `https://www.herve.dev` to `https://herve.dev`, preserving the path and query string. GitHub Actions verifies this redirect after deployment. GitHub connects directly to the origin IP on port 22, so it does not need a Cloudflare API token.
 
 The VPS serves this domain from `/var/www/herve.dev/current`. [`deploy/prepare-vps.sh`](deploy/prepare-vps.sh) prepares its dedicated user, release directory, HTTP challenge location, and Certbot. It accepts the deployment **public** key and runs as root once; the workflow's private key belongs only in Actions secrets. It does not replace the other domains' Nginx files.
 
 After the DNS record resolves, request the origin certificate on the VPS:
 
 ```sh
-certbot certonly --webroot -w /var/www/letsencrypt -d herve.dev \
+certbot certonly --webroot -w /var/www/letsencrypt --cert-name herve.dev \
+  -d herve.dev -d www.herve.dev --expand \
   --email herveranik@gmail.com --agree-tos --non-interactive
 ```
 
