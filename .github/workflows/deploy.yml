@@ -1,20 +1,23 @@
 name: Deploy Next.js portfolio to VPS
 
-# Manual deployment once InNext is committed to its own repository, or this
-# workflow is copied to the Portfolio repository's root .github/workflows/.
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: deploy-next-portfolio
+  group: portfolio-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   deploy:
     runs-on: ubuntu-24.04
+    timeout-minutes: 15
     env:
       NEXT_PUBLIC_SITE_URL: ${{ vars.NEXT_PUBLIC_SITE_URL || 'https://herve.dev' }}
       NEXT_PUBLIC_GTAG_ID: ${{ vars.NEXT_PUBLIC_GTAG_ID || 'G-Z4420RG7TZ' }}
@@ -55,22 +58,26 @@ jobs:
         working-directory: ${{ steps.project.outputs.directory }}
         run: npm run test:seo:static
 
-      - name: Package static output
+      - name: Test release activation and failure protection
         working-directory: ${{ steps.project.outputs.directory }}
-        run: tar -czf "$RUNNER_TEMP/portfolio-next.tar.gz" -C out .
+        run: npm run test:deployment
 
       - name: Deploy to VPS
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        working-directory: ${{ steps.project.outputs.directory }}
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_PATH: ${{ secrets.VPS_PATH }}
+          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
           VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
-        shell: bash
-        run: |
-          install -d -m 700 ~/.ssh
-          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          printf '%s\n' "$VPS_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          printf -v remote_path '%q' "$VPS_PATH"
-          ssh "$VPS_USER@$VPS_HOST" "mkdir -p -- $remote_path && tar -xzf - -C $remote_path" < "$RUNNER_TEMP/portfolio-next.tar.gz"
+        run: bash deploy/deploy-static.sh
+
+      - name: Verify live deployment through Cloudflare
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        working-directory: ${{ steps.project.outputs.directory }}
+        env:
+          SEO_ORIGIN: ${{ env.NEXT_PUBLIC_SITE_URL }}
+          DEPLOYMENT_SHA: ${{ github.sha }}
+        run: npm run test:seo
