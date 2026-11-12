@@ -27,7 +27,7 @@ if [[ ! -e /etc/nginx/sites-available/herve.dev ]]; then
 server {
     listen 80;
     listen [::]:80;
-    server_name herve.dev;
+    server_name herve.dev www.herve.dev;
     root /var/www/herve.dev/current;
     location ^~ /.well-known/acme-challenge/ {
         root /var/www/letsencrypt;

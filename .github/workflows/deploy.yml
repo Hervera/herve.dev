@@ -79,5 +79,6 @@ jobs:
         working-directory: ${{ steps.project.outputs.directory }}
         env:
           SEO_ORIGIN: ${{ env.NEXT_PUBLIC_SITE_URL }}
+          SEO_WWW_ORIGIN: https://www.herve.dev
           DEPLOYMENT_SHA: ${{ github.sha }}
         run: npm run test:seo
